@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Array Table</title>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <table id="arrayTable">
+      <thead>
+        <tr>
+          <th>Index</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Class</th>
+          <th>Address</th>
+          <th>Download</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <script src="xlsx.full.min.js"></script>
+    <script src="jspdf.umd.min.js"></script>
+    <script>
+      async function GetData() {
+        try {
+          // Assuming the Excel file is in the same directory and named "Examples.xlsx"
+          let response = await fetch("Examples.xlsx");
+          let data = await response.arrayBuffer();
+          let workbook = XLSX.read(data, { type: "array" });
+
+          // Assuming the Excel file contains only one sheet
+          let sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+          // Parse the sheet data
+          let jsonData = XLSX.utils.sheet_to_json(sheet);
+          return jsonData;
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+
+      async function displayData() {
+        const jsonData = await GetData();
+        // console.log(jsonData[0].Name);
+        const tableBody = document.querySelector("#arrayTable tbody");
+
+        jsonData.forEach((row, index) => {
+          const rowData = Object.values(row);
+          const tableRow = document.createElement("tr");
+          tableRow.innerHTML = `
+      <td>${index}</td>
+      <td>${rowData[0]}</td>
+      <td>${rowData[1]}</td>
+      <td>${rowData[2]}</td>
+      <td>${rowData[3]}</td>
+      <td><button onclick="downloadPDF(${index})">Download</button></td>
+    `;
+          tableBody.appendChild(tableRow);
+        });
+      }
+
+      async function downloadPDF(index) {
+        try {
+          const jsonData = await GetData();
+          const doc = new window.jspdf.jsPDF();
+          const rowData = Object.values(jsonData[index]);
+
+          // Start from the second row (first row is the header)
+          const startY = 10;
+          const lineHeight = 10;
+
+          // Iterate over the rowData and add them to the PDF
+          rowData.forEach((data, dataIndex) => {
+            const textX = 10;
+            const textY = startY + lineHeight * dataIndex;
+            doc.text(textX, textY, ` ${data}`, { align: "left" });
+            doc.text(textX, textY, ` ${data}`, { align: "left" });
+          });
+
+          doc.save(`${jsonData[index].Name}.pdf`);
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      }
+
+      displayData();
+    </script>
+  </body>
+</html>
